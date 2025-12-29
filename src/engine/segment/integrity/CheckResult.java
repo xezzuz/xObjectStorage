@@ -5,6 +5,13 @@ public class CheckResult {
 	private final String details; // EXPLAINS WHAT EXACTLY HAPPENED
 	private final Exception exception; // EXCEPTION DURING CHECK
 
+    public CheckResult(CheckType type, CheckStatus status, String details, Exception exception) {
+        this.type = type;
+        this.status = status;
+        this.details = details;
+        this.exception = exception;
+    }
+
 	public CheckType getType() {
         return type;
     }

@@ -164,13 +164,13 @@ public class IntegrityReport {
 			return this;
 		}
 
-		Builder expectedSize(boolean checksum) {
-			this.expectedSize = checksum;
+		Builder expectedSize(long size) {
+			this.expectedSize = size;
 			return this;
 		}
 
-		Builder actualSize(boolean checksum) {
-			this.actualSize = checksum;
+		Builder actualSize(long size) {
+			this.actualSize = size;
 			return this;
 		}
 
