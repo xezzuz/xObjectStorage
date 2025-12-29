@@ -1,5 +1,6 @@
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Optional;
 
 import engine.segment.SegmentState;
@@ -61,7 +62,7 @@ public class IntegrityReport {
 		this.actualChecksum = builder.actualChecksum;
 		this.ioException = builder.ioException;
 
-		this.checkResults = Collections.unmodifiableMap(new EnumMap<>(builder.checkResults));
+		this.checkResults = Collections.unmodifiableMap(new HashMap<>(builder.checkResults));
 
 		this.healthStatus = builder.healthStatus;
 		this.failureCategory = builder.failureCategory;
@@ -133,9 +134,83 @@ public class IntegrityReport {
 		private final String expectedChecksum;
 		private final String actualChecksum;
 		private final Exception ioException;
-		private final Map<CheckType, CheckResult> checkResults = new EnumMap<>(CheckType.class);
+		private final Map<CheckType, CheckResult> checkResults = new HashMap<>();
 		private final HealthStatus healthStatus = HealthStatus.UNKNOWN;
 		private final FailureCategory failureCategory = FailureCategory.NONE;
 		private final Severity severity = Severity.INFO;
+
+		public Builder(int segmentId, Path segmentPath) {
+			this.segmentId = segmentId;
+			this.segmentPath = segmentPath;
+		}
+
+		Builder segmentState(SegmentState state) {
+			this.segmentState = state;
+			return this;
+		}
+
+		Builder fileExists(boolean value) {
+			this.fileExists = value;
+			return this;
+		}
+
+		Builder isRegularFile(boolean value) {
+			this.isRegularFile = value;
+			return this;
+		}
+
+		Builder isReadable(boolean value) {
+			this.isReadableFile = value;
+			return this;
+		}
+
+		Builder expectedSize(boolean checksum) {
+			this.expectedSize = checksum;
+			return this;
+		}
+
+		Builder actualSize(boolean checksum) {
+			this.actualSize = checksum;
+			return this;
+		}
+
+		Builder expectedChecksum(String checksum) {
+			this.expectedChecksum = checksum;
+			return this;
+		}
+
+		Builder actualChecksum(String checksum) {
+			this.actualChecksum = checksum;
+			return this;
+		}
+
+		Builder exception(Exception e) {
+			this.ioException = e;
+			return this;
+		}
+
+		Builder addCheckResult(CheckResult result) {
+			this.checkResults.put(result.getType(), result);
+			return this;
+		}
+
+		public Builder healthStatus(HealthStatus status) {
+			this.healthStatus = status;
+			return this;
+		}
+
+		public Builder failureCategory(FailureCategory category) {
+			this.failureCategory = category;
+			return this;
+		}
+
+		public Builder severity(Severity severity) {
+			this.severity = severity;
+			return this;
+		}
+
+		public IntegrityReport build() {
+			return new IntegrityReport(this);
+		}
 	}
 }
