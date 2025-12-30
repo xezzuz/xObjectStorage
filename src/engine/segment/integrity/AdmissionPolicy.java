@@ -1,7 +1,9 @@
 package engine.segment.integrity;
 
+import static logging.AppLogger.log;
+
 // import engine.segment.integrity.IntegrityRegistry;
-// import engine.segment.integrity.enums.HealthStatus;
+import engine.segment.integrity.enums.*;
 
 
 /**
@@ -23,33 +25,34 @@ public class AdmissionPolicy {
 
 	public boolean isWritable(int segmentId) {
 		IntegrityReport report = registry.get(segmentId);
-		if (report == null)
-			return false; // i think it is safer to deny
-
-		// this will evolve later (health vs failure vs severity)
-		switch (report.getHealthStatus()) {
-			case HEALTHY:
-				return true;
-			case UNHEALTHY:
-				return false;
-			default:
-				return false;
+		if (report == null) {
+			log.warning("No integrity report found for segment " + segmentId + ", allowing write access assuming its healthy");
+			return true; // i think is safer to deny here - but we will decide later
 		}
+
+		boolean writable = report.getHealthStatus() == HealthStatus.HEALTHY;
+		if (!writable) {
+			log.warning("Segment " + segmentId + " denied write access due to health status: " + report.getHealthStatus());
+		} else {
+			log.fine("Segment " + segmentId + " granted write access, health: " + report.getHealthStatus());
+		}
+		return writable;
 	}
 
 	public boolean isReadable(int segmentId) {
 		IntegrityReport report = registry.get(segmentId);
-		if (report == null)
-			return false; // i think it is safer to deny
-
-		// this will evolve later (health vs failure vs severity)
-		switch (report.getHealthStatus()) {
-			case HEALTHY:
-				return true;
-			case DEGRADED:
-				return true;
-			default:
-				return false;
+		if (report == null) {
+			log.warning("No integrity report found for segment " + segmentId + ", allowing read access assuming its healthy");
+			return true; // i think is safer to deny here - but we will decide later
 		}
+
+		boolean readable = report.getHealthStatus() == HealthStatus.HEALTHY ||
+						  report.getHealthStatus() == HealthStatus.DEGRADED;
+		if (!readable) {
+			log.warning("Segment " + segmentId + " denied read access due to health status: " + report.getHealthStatus());
+		} else {
+			log.fine("Segment " + segmentId + " granted read access, health: " + report.getHealthStatus());
+		}
+		return readable;
 	}
 }

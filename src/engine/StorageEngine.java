@@ -1,12 +1,19 @@
 package engine;
 
 import engine.segment.*;
+import engine.segment.integrity.AdmissionPolicy;
+import engine.segment.integrity.IntegrityChecker;
+import engine.segment.integrity.IntegrityRegistry;
+import engine.segment.integrity.IntegrityReport;
+import engine.segment.integrity.enums.CheckSource;
 import engine.config.*;
 import objectabstraction.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+
+import static logging.AppLogger.log;
 
 /**
  * The StorageEngine is the composition root and lifecycle owner of the storage system.
@@ -21,23 +28,65 @@ import java.nio.file.Path;
  * or segment specific logic.
  */
 public class StorageEngine {
-	private final Path rootStorageDir;
-	private SegmentDirectory segmentManager; // this represents a single bucket
+	private final Path rootStorageDir; // a disk?
+	private final SegmentDirectory segmentDirectory; // a single bucket - later will be able to support multiple ones
+	private final IntegrityRegistry registry;
+	private final AdmissionPolicy admissionPolicy;
 
 	public StorageEngine() throws IOException {
-		rootStorageDir = Path.of(StorageEngineConfig.STORAGE_ROOT);
-
-		// create root storage if does not exist
+		this.rootStorageDir = Path.of(StorageEngineConfig.STORAGE_ROOT);
 		Files.createDirectories(rootStorageDir);
 
-		this.segmentManager = new SegmentDirectory(this.rootStorageDir.resolve(StorageEngineConfig.SEGMENT_POOL_DIR_NAME));
+		this.registry = new IntegrityRegistry();
+		this.admissionPolicy = new AdmissionPolicy(registry);
+
+		this.segmentDirectory = new SegmentDirectory(
+			this.rootStorageDir.resolve(StorageEngineConfig.SEGMENT_POOL_DIR_NAME),
+			admissionPolicy
+		);
+
+		runStartupIntegrityChecks();
+	}
+
+	private void runStartupIntegrityChecks() {
+		log.info("Starting startup integrity checks for " + segmentDirectory.getAllSegments().size() + " segments");
+
+		int healthyCount = 0;
+		int unhealthyCount = 0;
+		int degradedCount = 0;
+
+		for (SegmentMeta segment : segmentDirectory.getAllSegments()) {
+			log.fine("Checking segment " + segment.getId());
+			IntegrityReport report = IntegrityChecker.check(segment, CheckSource.STARTUP);
+			registry.add(report);
+
+			switch (report.getHealthStatus()) {
+				case HEALTHY:
+					healthyCount++;
+					break;
+				case UNHEALTHY:
+				case UNUSABLE:
+					unhealthyCount++;
+					log.warning("Segment " + segment.getId() + " failed integrity check: " + report.getFailureCategory());
+					break;
+				case DEGRADED:
+					degradedCount++;
+					log.info("Segment " + segment.getId() + " has degraded status: " + report.getFailureCategory());
+					break;
+				default:
+					log.info("Segment " + segment.getId() + " has " + report.getHealthStatus() + " status");
+			}
+		}
+
+		log.info("Startup integrity checks completed: " + healthyCount + " healthy, " +
+				degradedCount + " degraded, " + unhealthyCount + " unhealthy");
 	}
 
 	public ObjectLocation write(InputStream src) throws IOException {
-		return segmentManager.append(src);
+		return segmentDirectory.append(src);
 	}
 
 	public InputStream read(ObjectLocation location) throws IOException {
-		return segmentManager.read(location);
+		return segmentDirectory.read(location);
 	}
 }

@@ -10,6 +10,8 @@ import engine.util.ChecksumUtils;
 import engine.segment.integrity.enums.*;
 import engine.segment.integrity.*;
 
+import static logging.AppLogger.log;
+
 /**
  * SegmentIntegrityChecker performs physical integrity checks on segment resources.
  *
@@ -21,6 +23,8 @@ import engine.segment.integrity.*;
  */
 public final class IntegrityChecker {
 	public static IntegrityReport check(SegmentMeta meta, CheckSource source) {
+		log.info("Starting integrity check for segment " + meta.getId() + " from source " + source);
+
 		IntegrityReport.Builder reportBuilder =
 			new IntegrityReport.Builder(meta.getId(), meta.getPath())
 			.segmentState(meta.getState())
@@ -37,6 +41,7 @@ public final class IntegrityChecker {
 		 */
 
 		/* ---------- EXISTENCE + PERMISSIONS ---------- */
+		log.fine("Checking existence and permissions for segment " + meta.getId());
 		try {
 			boolean exists = Files.exists(meta.getPath());
 			boolean regular = exists && Files.isRegularFile(meta.getPath());
@@ -61,6 +66,7 @@ public final class IntegrityChecker {
 			);
 
 			if (!exists || !regular || !readable) {
+				log.warning("Segment " + meta.getId() + " failed existence/perms check, skipping dependent checks");
 				// SKIP DEPENDENT CHECKS
 				result.put(CheckType.SIZE, skipCheckResult(CheckType.SIZE, "Prerequisite failed"));
 				result.put(CheckType.CHECKSUM, skipCheckResult(CheckType.CHECKSUM, "Prerequisite failed"));
@@ -68,6 +74,7 @@ public final class IntegrityChecker {
 				return finalizeReport(reportBuilder, result);
 			}
 		} catch (Exception e) {
+			log.severe("Exception during existence/permissions check for segment " + meta.getId() + ": " + e.getMessage());
 			reportBuilder.exception(e);
 			result.put(CheckType.IO, errorCheckResult(CheckType.IO, e.getMessage(), e));
 			// TODO: RETURN THE FINAL REPORT
@@ -75,6 +82,7 @@ public final class IntegrityChecker {
 		}
 
 		/* -------------------- SIZE -------------------- */
+		log.fine("Checking size for segment " + meta.getId());
 		try {
 			long actualSize = Files.size(meta.getPath());
 			reportBuilder.actualSize(actualSize);
@@ -82,6 +90,7 @@ public final class IntegrityChecker {
 			if (actualSize == meta.getSize()) {
 				result.put(CheckType.SIZE, passCheckResult(CheckType.SIZE));
 			} else {
+				log.warning("Segment " + meta.getId() + " size mismatch: expected " + meta.getSize() + ", actual " + actualSize);
 				result.put(CheckType.SIZE, failCheckResult(CheckType.SIZE, String.format("Expected: '%d', Actual: '%d'", meta.getSize(), actualSize)));
 				// SKIP DEPENDENT CHECKS
 				result.put(CheckType.CHECKSUM, skipCheckResult(CheckType.CHECKSUM, "Prerequisite failed"));
@@ -89,6 +98,7 @@ public final class IntegrityChecker {
 				return finalizeReport(reportBuilder, result);
 			}
 		} catch (Exception e) {
+			log.severe("Exception during size check for segment " + meta.getId() + ": " + e.getMessage());
 			reportBuilder.exception(e);
 			result.put(CheckType.IO, errorCheckResult(CheckType.IO, e.getMessage(), e));
 			// TODO: RETURN THE FINAL REPORT
@@ -96,11 +106,13 @@ public final class IntegrityChecker {
 		}
 
 		/* ------------------ CHECKSUM ------------------ */
+		log.fine("Checking checksum for segment " + meta.getId());
 		try {
 			String actualChecksum = ChecksumUtils.calculateFileChecksum(meta.getPath());
 			if (actualChecksum.equals(meta.getChecksum())) {
 				result.put(CheckType.CHECKSUM, passCheckResult(CheckType.CHECKSUM));
 			} else {
+				log.warning("Segment " + meta.getId() + " checksum mismatch: expected " + meta.getChecksum() + ", actual " + actualChecksum);
 				result.put(CheckType.CHECKSUM, failCheckResult(CheckType.CHECKSUM, String.format("Expected: '%s', Actual: '%s'", meta.getChecksum(), actualChecksum)));
 				// SKIP DEPENDENT CHECKS IF ANY IN THE FUTURE
 				// result.put(CheckType.CHECKSUM, "Prerequisite failed"); // EXAMPLE
@@ -108,11 +120,14 @@ public final class IntegrityChecker {
 				return finalizeReport(reportBuilder, result);
 			}
 		} catch (Exception e) {
+			log.severe("Exception during checksum check for segment " + meta.getId() + ": " + e.getMessage());
 			reportBuilder.exception(e);
 			result.put(CheckType.IO, errorCheckResult(CheckType.IO, e.getMessage(), e));
 			// TODO: RETURN THE FINAL REPORT
 		}
-		return finalizeReport(reportBuilder, result);
+		IntegrityReport report = finalizeReport(reportBuilder, result);
+		log.info("Completed integrity check for segment " + meta.getId() + ", health: " + report.getHealthStatus());
+		return report;
 	}
 
 	private static IntegrityReport finalizeReport(IntegrityReport.Builder builder, Map<CheckType, CheckResult> results) {
@@ -133,8 +148,10 @@ public final class IntegrityChecker {
 	}
 
 	private static FailureCategory mapFailureCategory(Map<CheckType, CheckResult> results) {
-		if (results.containsValue(CheckStatus.ERROR))
-			return FailureCategory.IO_FAILURE;
+		// TODO: FIX THIS PLIZ HH
+		// if (results.containsValue(CheckStatus.ERROR))
+		// 	return FailureCategory.IO_FAILURE;
+
 
 		if (results.containsKey(CheckType.EXISTENCE) && results.get(CheckType.EXISTENCE).getStatus() == CheckStatus.FAIL)
 			return FailureCategory.MISSING_RESOURCE;

@@ -35,8 +35,8 @@ public class SegmentReader {
 		long offset = location.getOffset();
 		long size = location.getSize();
 
-		log.info("READ: Path = " + pathToSegment);
-		log.info("READ: Offset = " + offset + ", Size = " + size);
+		log.finest("READ: Path = " + pathToSegment);
+		log.finest("READ: Offset = " + offset + ", Size = " + size);
 
 		File file = pathToSegment.toFile();
 		if (!file.exists()) {
@@ -45,7 +45,7 @@ public class SegmentReader {
 		}
 
 		long fileLength = file.length();
-		log.info("READ: File length = " + fileLength);
+		log.finest("READ: File length = " + fileLength);
 
 		if (offset > fileLength) {
 			log.warning("Offset is beyond file length!");
@@ -71,7 +71,7 @@ public class SegmentReader {
 		}
 
 		raf.close();
-		log.info("READ: Successfully read " + buffer.length + " bytes");
+		log.finest("READ: Successfully read " + buffer.length + " bytes");
 
 		return new ByteArrayInputStream(buffer);
 	}

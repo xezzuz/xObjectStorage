@@ -100,7 +100,7 @@ public class SegmentDirectoryPersistence {
 			e.printStackTrace();
 		}
 
-		log.info("LOADING METADATA FROM DISK RESULT " + allSegments);
+		// log.info("LOADING METADATA FROM DISK RESULT " + allSegments);
 
 		return new SegmentDirectoryPersistenceLoadResult(allSegments);
 	}
@@ -117,7 +117,7 @@ public class SegmentDirectoryPersistence {
 		i think that updates to memory should be reflected immediately - to disk should be batched
 	*/
 	public void save() {
-		log.fine("SAVING ALL SEGMENTS INTO TEMP FILE " + allSegments);
+		log.fine("Performing a save of in memory segments metadata into persistence layer [temp file for now]");
 
 		Path tempMetaFile = poolDirPath.resolve("meta.data.tmp");
 
@@ -132,8 +132,6 @@ public class SegmentDirectoryPersistence {
 			);
 		) {
 			for (SegmentMeta segment : allSegments) {
-				log.fine("CURRENT SEGMENT TO SAVE " + segment);
-
 				byte[] lineBytes = (formatMetaLine(segment) + "\n").getBytes();
 
 				ByteBuffer buffer = ByteBuffer.wrap(lineBytes);
@@ -145,7 +143,7 @@ public class SegmentDirectoryPersistence {
 
 			channel.force(true);
 		} catch (IOException e) {
-			throw new RuntimeException("Failed to write inMemoryData to temp metadata file", e);
+			throw new RuntimeException("Failed to save in memory metadata to temp metadata file", e);
 		}
 
 		try {

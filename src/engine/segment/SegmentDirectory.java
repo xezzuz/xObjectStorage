@@ -2,6 +2,7 @@ package engine.segment;
 
 import engine.config.StorageEngineConfig;
 import engine.segment.*;
+import engine.segment.integrity.AdmissionPolicy;
 import engine.util.ChecksumUtils;
 import objectabstraction.*;
 
@@ -33,6 +34,7 @@ import java.util.*;
 public class SegmentDirectory {
 
 	private final Path storageDir;
+	private final AdmissionPolicy admissionPolicy;
 
 	private int nextSegmentId;
 
@@ -43,7 +45,7 @@ public class SegmentDirectory {
 	private List<SegmentMeta> allSegments = new ArrayList<>();
 	private Queue<SegmentMeta> writableSegmentsPool = new LinkedList<>();
 
-	public SegmentDirectory(Path poolDirPath) {
+	public SegmentDirectory(Path poolDirPath, AdmissionPolicy admissionPolicy) {
 		if (!Files.exists(poolDirPath)) {
 			log.info("Segments Pool directory does not exist - Creating new one");
 
@@ -58,6 +60,7 @@ public class SegmentDirectory {
 		}
 
 		this.storageDir = poolDirPath;
+		this.admissionPolicy = admissionPolicy;
 		this.maxSegmentSize = StorageEngineConfig.SEGMENT_MAX_SIZE;
 		this.persistence = new SegmentDirectoryPersistence(storageDir);
 
@@ -68,12 +71,9 @@ public class SegmentDirectory {
 	public ObjectLocation append(InputStream src) throws IOException {
 		SegmentWriter writer = getSegmentWriter();
 
-		log.fine("APPENDING OPERATION TO SEGMENT " + writer.getSegmentMeta());
-		// System.out.println("[TRACE] SegmentDirectory APPENDING OPERATION TO SEGMENT " + writer.getSegmentMeta());
-
+		log.fine("Appending operation to segment " + writer.getSegmentMeta().getId() + " started");
 		ObjectLocation objectLocation =  writer.write(src);
-		log.info("OBJECT LOCATION DEFINED " + objectLocation);
-		// System.out.println("[TRACE] SegmentDirectory OBJECT LOCATION DEFINED " + objectLocation);
+		log.info("Appending operation to segment " + objectLocation.getSegmentId() + " succeeded (@" + objectLocation.getOffset() + ", " + objectLocation.getSize() + " bytes)");
 
 		releaseWritableSegment(writer.getSegmentMeta());
 
@@ -89,32 +89,35 @@ public class SegmentDirectory {
 	public InputStream read(ObjectLocation location) throws IOException {
 		SegmentReader reader = getSegmentReader(location.getSegmentId());
 
-		log.fine("READING OPERATION TO SEGMENT " + reader);
-		log.fine("OBJECT LOCATION " + location);
-		// System.out.println("[TRACE] SegmentDirectory READING OPERATION TO SEGMENT " + reader);
-		// System.out.println("[TRACE] SegmentDirectory OBJECT LOCATION " + location);
+		log.fine("Reading operation from segment " + reader.getSegmentMeta().getId() + " started");
+		InputStream in = reader.read(location);
+		log.info("Reading operation from segment " + location.getSegmentId() + " succeeded (@" + location.getOffset() + ", " + location.getSize() + " bytes)");
 
-		return reader.read(location);
+		return in;
 	}
 
 	private SegmentMeta acquireWritableSegment() {
 		SegmentMeta segment = writableSegmentsPool.poll();
-		if (segment != null) {
-			log.fine("GETTING A WRITABLE SEGMENT FROM POOL");
-			// System.out.println("[TRACE] GETTING A WRITABLE SEGMENT FROM POOL");
+		if (segment != null && admissionPolicy.isWritable(segment.getId())) {
+			log.fine("Acquired writable segment " + segment.getId() + " from pool");
 			return segment;
 		}
 
-		// try {
-			log.fine("GETTING A NEW SEGMENT - POOL IS EMPTY");
-			// System.out.println("[TRACE] GETTING A NEW SEGMENT - POOL IS EMPTY");
-			segment = getNextSegmentMeta();
-			allSegments.add(segment);
-		// } catch (IOException e) {
-		// 	throw new RuntimeException("Failed to create segment", e);
-		// }
+		if (segment != null) {
+			log.fine("Segment " + segment.getId() + " was in pool but denied by admission policy, getting new segment");
+		} else {
+			log.fine("Writable segment pool is empty, creating new segment");
+		}
 
-		return segment;
+		segment = getNextSegmentMeta();
+		if (admissionPolicy.isWritable(segment.getId())) {
+			allSegments.add(segment);
+			log.fine("Created new writable segment " + segment.getId());
+			return segment;
+		}
+
+		log.severe("Failed to acquire a writable segment due to integrity + admission policy restrictions");
+		throw new IllegalStateException("Failed to acquire a writable segment due to integrity + admission policy restrictions");
 	}
 
 	private void releaseWritableSegment(SegmentMeta toRelease) throws IOException {
@@ -146,22 +149,28 @@ public class SegmentDirectory {
 			}
 		}
 
-		if (readableSegment == null)
-			throw new IllegalStateException("Failed to get a readable segment");
+		if (readableSegment == null) {
+			log.severe("Failed to get a readable segment with id " + id);
+			throw new IllegalStateException("Failed to get a readable segment with id " + id);
+		}
 
+		if (!admissionPolicy.isReadable(id)) {
+			log.warning("Segment " + id + " is not allowed for reading due to integrity + admission policy restrictions");
+			throw new IllegalStateException("Segment " + id + " is not allowed for reading due to integrity + admission policy restrictions");
+		}
+
+		log.fine("Successfully retrieved readable segment " + id);
 		return new SegmentReader(readableSegment);
 	}
 
 	private void sealSegment(SegmentMeta toBeSealed) {
 		toBeSealed.setState(SegmentState.SEALED);
-		log.fine("SEGMENT " + toBeSealed + " IS SEALED");
-		// System.out.println("[TRACE] SEGMENT " + toBeSealed + " IS SEALED");
+		log.fine("Sealing segment " + toBeSealed);
 	}
 
 	private boolean isInNeedToBeSealed(SegmentMeta segment) throws IOException {
 		if (segment.getSize() >= maxSegmentSize) {
-			log.fine("SEGMENT " + segment + " REACHED ITS MAXIMUM SIZE THRESHOLD");
-			// System.out.println("[TRACE] SEGMENT " + segment + " REACHED ITS MAXIMUM SIZE THRESHOLD");
+			log.fine("Segment " + segment.getId() + " reached the maximum size threshold");
 			return true;
 		}
 		return false;
@@ -187,20 +196,31 @@ public class SegmentDirectory {
 	// }
 
 	private void loadSegmentsIntoMemory() {
+		log.info("Loading segments into memory from persistence");
 		allSegments = persistence.getAllSegments();
+		log.info("Loaded " + allSegments.size() + " segments from persistence");
 
 		int lastSegmentId = -1;
+		int activeCount = 0;
 		for (SegmentMeta segment : allSegments) {
-			if (segment.getState() == SegmentState.ACTIVE)
+			if (segment.getState() == SegmentState.ACTIVE) {
 				this.writableSegmentsPool.add(segment);
+				activeCount++;
+			}
 
 			lastSegmentId = segment.getId();
 		}
 
+		log.info("Added " + activeCount + " active segments to writable pool");
 		nextSegmentId = lastSegmentId + 1;
+		log.info("Next segment ID will be " + nextSegmentId);
 	}
 
 	private Path generateSegmentFilePath(int segmentId) {
 		return storageDir.resolve(String.format("segment-%04d.dat", segmentId));
+	}
+
+	public List<SegmentMeta> getAllSegments() {
+		return this.allSegments;
 	}
 }
