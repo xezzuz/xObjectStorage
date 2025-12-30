@@ -1,10 +1,21 @@
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Map;
 import java.util.HashMap;
 import java.util.Optional;
+import java.util.Collections;
 
 import engine.segment.SegmentState;
 
+/**
+ * SegmentIntegrityReport is an immutable description of a segment's observed health.
+ *
+ * Responsibilities:
+ * - Get the results of integrity checks at a specific point in time (startup, periodic, manual)
+ * - Describe failures, severity, and usability of a segment
+ *
+ * This class produce facts, it should not make decisions.
+ */
 public class IntegrityReport {
 	/* ------------------ IDENTITY ------------------ */
 
@@ -40,7 +51,7 @@ public class IntegrityReport {
 
 	private final HealthStatus healthStatus;
 	private final FailureCategory failureCategory;
-	private final Severity severity;
+	private final SeverityLevel severity;
 
 	// private final boolean recoverable;
 	// private final boolean requiresImmediateAction;
@@ -68,9 +79,9 @@ public class IntegrityReport {
 		this.failureCategory = builder.failureCategory;
 		this.severity = builder.severity;
 
-		this.recoverable = builder.recoverable;
-		this.requiresImmediateAction = builder.requiresImmediateAction;
-		this.safeToRetryChecks = builder.safeToRetryChecks;
+		// this.recoverable = builder.recoverable;
+		// this.requiresImmediateAction = builder.requiresImmediateAction;
+		// this.safeToRetryChecks = builder.safeToRetryChecks;
 	}
 
 
@@ -108,7 +119,7 @@ public class IntegrityReport {
 		return failureCategory;
 	}
 
-	public Severity getSeverity() {
+	public SeverityLevel getSeverity() {
 		return severity;
 	}
 
@@ -123,21 +134,21 @@ public class IntegrityReport {
 	public static class Builder {
 		private final int segmentId;
 		private final Path segmentPath;
-		private final SegmentState segmentState;
-		private final CheckSource checkSource; // startup, periodic, manual
-		private final Instant checkTimestamp = Instant.now();
-		private final boolean fileExists;
-		private final boolean isRegularFile;
-		private final boolean isReadableFile;
-		private final Long expectedSize;
-		private final Long actualSize;
-		private final String expectedChecksum;
-		private final String actualChecksum;
-		private final Exception ioException;
-		private final Map<CheckType, CheckResult> checkResults = new HashMap<>();
-		private final HealthStatus healthStatus = HealthStatus.UNKNOWN;
-		private final FailureCategory failureCategory = FailureCategory.NONE;
-		private final Severity severity = Severity.INFO;
+		private SegmentState segmentState;
+		private CheckSource checkSource; // startup, periodic, manual
+		private Instant checkTimestamp = Instant.now();
+		private boolean fileExists;
+		private boolean isRegularFile;
+		private boolean isReadableFile;
+		private Long expectedSize;
+		private Long actualSize;
+		private String expectedChecksum;
+		private String actualChecksum;
+		private Exception ioException;
+		private Map<CheckType, CheckResult> checkResults = new HashMap<>();
+		private HealthStatus healthStatus = HealthStatus.UNKNOWN;
+		private FailureCategory failureCategory = FailureCategory.NONE;
+		private SeverityLevel severity = SeverityLevel.INFO;
 
 		public Builder(int segmentId, Path segmentPath) {
 			this.segmentId = segmentId;
@@ -161,6 +172,11 @@ public class IntegrityReport {
 
 		Builder isReadable(boolean value) {
 			this.isReadableFile = value;
+			return this;
+		}
+
+		Builder checkSource(CheckSource source) {
+			this.checkSource = source;
 			return this;
 		}
 
@@ -204,7 +220,7 @@ public class IntegrityReport {
 			return this;
 		}
 
-		public Builder severity(Severity severity) {
+		public Builder severity(SeverityLevel severity) {
 			this.severity = severity;
 			return this;
 		}

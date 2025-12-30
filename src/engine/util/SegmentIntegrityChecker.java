@@ -109,7 +109,7 @@ public class SegmentIntegrityChecker {
 		@Override
 		public String toString() {
 			return String.format("SegmentHealthStatus{id=%d, fileExists=%b, sizeMatches=%b, checksumValid=%b, errors=%d}",
-				segmentId, fileExists, sizeMatches, checksumValid, errorMessages.size());
+				segmentId, fileExists, sizeMatches, checksumValid, errors.size());
 		}
 	}
 

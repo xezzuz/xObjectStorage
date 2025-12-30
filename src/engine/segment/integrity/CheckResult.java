@@ -1,3 +1,5 @@
+import java.util.Optional;
+
 public class CheckResult {
 	private final CheckType type;
 	private final CheckStatus status;
