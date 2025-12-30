@@ -1,4 +1,8 @@
+package engine.segment.integrity;
+
 import java.util.Optional;
+
+import engine.segment.integrity.enums.*;
 
 public class CheckResult {
 	private final CheckType type;

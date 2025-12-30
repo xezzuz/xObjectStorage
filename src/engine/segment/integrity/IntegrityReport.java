@@ -1,3 +1,5 @@
+package engine.segment.integrity;
+
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Map;
@@ -6,6 +8,8 @@ import java.util.Optional;
 import java.util.Collections;
 
 import engine.segment.SegmentState;
+import engine.segment.integrity.enums.*;
+import engine.segment.integrity.*;
 
 /**
  * SegmentIntegrityReport is an immutable description of a segment's observed health.

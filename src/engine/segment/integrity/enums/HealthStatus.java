@@ -1,3 +1,5 @@
+package engine.segment.integrity.enums;
+
 public enum HealthStatus {
 	HEALTHY, // EVERYTHING IS WORKING AS EXPECTED
 	DEGRADED, // COULD MEAN METADATA_MISMTACH OR NEED OF COMPACTION (STILL USABLE)

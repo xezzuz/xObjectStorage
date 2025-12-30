@@ -14,8 +14,23 @@ import java.nio.file.Path;
 import java.util.*;
 
 /* this class manages a segment group aka buckets */
-
-public class SegmentPoolManager {
+/**
+ * SegmentDirectory manages a directory of segments and their runtime lifecycle.
+ * its old name was SegmentPoolManager, ill implement that later
+ * the SegmentDirectory should evolve later to contain a pool of readers and writers
+ *
+ * Responsibilities:
+ * - Maintain in-memory metadata for all segments in the directory
+ * - Allocate, seal, and persist segments
+ * - Route read and write operations to appropriate segment readers/writers
+ * - Enforce admission decisions provided by external policies
+ *
+ * This class does NOT:
+ * - Perform integrity checks
+ * - Decide system-wide behavior
+ * - Implement recovery or health policies
+ */
+public class SegmentDirectory {
 
 	private final Path storageDir;
 
@@ -23,12 +38,12 @@ public class SegmentPoolManager {
 
 	private final long maxSegmentSize;
 
-	private final SegmentPoolPersistence persistence;
+	private final SegmentDirectoryPersistence persistence;
 
 	private List<SegmentMeta> allSegments = new ArrayList<>();
 	private Queue<SegmentMeta> writableSegmentsPool = new LinkedList<>();
 
-	public SegmentPoolManager(Path poolDirPath) {
+	public SegmentDirectory(Path poolDirPath) {
 		if (!Files.exists(poolDirPath)) {
 			log.info("Segments Pool directory does not exist - Creating new one");
 
@@ -44,7 +59,7 @@ public class SegmentPoolManager {
 
 		this.storageDir = poolDirPath;
 		this.maxSegmentSize = StorageEngineConfig.SEGMENT_MAX_SIZE;
-		this.persistence = new SegmentPoolPersistence(storageDir);
+		this.persistence = new SegmentDirectoryPersistence(storageDir);
 
 		loadSegmentsIntoMemory();
 		// loadWritableSegmentsPool();
@@ -54,11 +69,11 @@ public class SegmentPoolManager {
 		SegmentWriter writer = getSegmentWriter();
 
 		log.fine("APPENDING OPERATION TO SEGMENT " + writer.getSegmentMeta());
-		// System.out.println("[TRACE] SegmentPoolManager APPENDING OPERATION TO SEGMENT " + writer.getSegmentMeta());
+		// System.out.println("[TRACE] SegmentDirectory APPENDING OPERATION TO SEGMENT " + writer.getSegmentMeta());
 
 		ObjectLocation objectLocation =  writer.write(src);
 		log.info("OBJECT LOCATION DEFINED " + objectLocation);
-		// System.out.println("[TRACE] SegmentPoolManager OBJECT LOCATION DEFINED " + objectLocation);
+		// System.out.println("[TRACE] SegmentDirectory OBJECT LOCATION DEFINED " + objectLocation);
 
 		releaseWritableSegment(writer.getSegmentMeta());
 
@@ -76,8 +91,8 @@ public class SegmentPoolManager {
 
 		log.fine("READING OPERATION TO SEGMENT " + reader);
 		log.fine("OBJECT LOCATION " + location);
-		// System.out.println("[TRACE] SegmentPoolManager READING OPERATION TO SEGMENT " + reader);
-		// System.out.println("[TRACE] SegmentPoolManager OBJECT LOCATION " + location);
+		// System.out.println("[TRACE] SegmentDirectory READING OPERATION TO SEGMENT " + reader);
+		// System.out.println("[TRACE] SegmentDirectory OBJECT LOCATION " + location);
 
 		return reader.read(location);
 	}

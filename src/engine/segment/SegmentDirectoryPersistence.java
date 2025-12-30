@@ -17,7 +17,7 @@ import java.util.Scanner;
 
 import static logging.AppLogger.log;
 
-public class SegmentPoolPersistence {
+public class SegmentDirectoryPersistence {
 	private final Path poolDirPath;
 	private final Path metadataFile;
 
@@ -25,7 +25,7 @@ public class SegmentPoolPersistence {
 
 	private final List<SegmentMeta> allSegments;
 
-	public SegmentPoolPersistence(Path poolDirPath) {
+	public SegmentDirectoryPersistence(Path poolDirPath) {
 		this.poolDirPath = poolDirPath;
 		this.metadataFile = poolDirPath.resolve(StorageEngineConfig.SEGMENT_POOL_METADATA_FILENAME);
 		this.inMemorySegments = new HashMap<>();
@@ -73,10 +73,10 @@ public class SegmentPoolPersistence {
 		identify inconsistencies from temporary files
 		rollback mechanism through backup files
 	*/
-	private SegmentPoolPersistenceLoadResult loadFromDisk() {
+	private SegmentDirectoryPersistenceLoadResult loadFromDisk() {
 		if (!Files.exists(metadataFile)) {
 			log.warning("METADATA FILE DOES NOT EXIST");
-				return new SegmentPoolPersistenceLoadResult();
+				return new SegmentDirectoryPersistenceLoadResult();
 		}
 
 		List<SegmentMeta> allSegments = new ArrayList<>();
@@ -102,7 +102,7 @@ public class SegmentPoolPersistence {
 
 		log.info("LOADING METADATA FROM DISK RESULT " + allSegments);
 
-		return new SegmentPoolPersistenceLoadResult(allSegments);
+		return new SegmentDirectoryPersistenceLoadResult(allSegments);
 	}
 
 	/*
@@ -197,14 +197,14 @@ public class SegmentPoolPersistence {
 				+ System.currentTimeMillis();
 	}
 
-	public static class SegmentPoolPersistenceLoadResult {
+	public static class SegmentDirectoryPersistenceLoadResult {
 		private final List<SegmentMeta> segments;
 
-		public SegmentPoolPersistenceLoadResult() {
+		public SegmentDirectoryPersistenceLoadResult() {
 			this(Collections.emptyList());
 		}
 
-		public SegmentPoolPersistenceLoadResult(List<SegmentMeta> segments) {
+		public SegmentDirectoryPersistenceLoadResult(List<SegmentMeta> segments) {
 			this.segments = segments;
 		}
 
@@ -214,7 +214,7 @@ public class SegmentPoolPersistence {
 
 		@Override
 		public String toString() {
-			return String.format("SegmentPoolPersistenceLoadResult{segments='%s'}", segments);
+			return String.format("SegmentDirectoryPersistenceLoadResult{segments='%s'}", segments);
 		}
 	}
 }

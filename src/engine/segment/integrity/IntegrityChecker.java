@@ -1,9 +1,14 @@
+package engine.segment.integrity;
+
 import java.nio.file.Files;
 import java.util.Map;
 import java.util.HashMap;
 
 import engine.segment.SegmentMeta;
 import engine.util.ChecksumUtils;
+
+import engine.segment.integrity.enums.*;
+import engine.segment.integrity.*;
 
 /**
  * SegmentIntegrityChecker performs physical integrity checks on segment resources.

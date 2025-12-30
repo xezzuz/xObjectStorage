@@ -1,3 +1,5 @@
+package engine.segment.integrity.enums;
+
 public enum CheckStatus {
 	PASS, // PASSED
 	FAIL, // FAILED

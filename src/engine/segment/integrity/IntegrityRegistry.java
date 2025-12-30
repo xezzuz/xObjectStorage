@@ -2,7 +2,7 @@ package engine.segment.integrity;
 
 import java.util.Map;
 import java.util.HashMap;
-import engine.segment.integrity.IntegrityReport;
+// import engine.segment.integrity.IntegrityReport;
 
 /**
  * IntegrityRegistry stores the latest known integrity reports for each segment in a SegmentDirectory.

@@ -1,3 +1,5 @@
+package engine.segment.integrity.enums;
+
 public enum FailureCategory {
 	NONE,
 	MISSING_RESOURCE,
