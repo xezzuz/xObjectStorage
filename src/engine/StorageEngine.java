@@ -3,6 +3,7 @@ package engine;
 import engine.segment.*;
 import engine.segment.integrity.AdmissionPolicy;
 import engine.segment.integrity.IntegrityChecker;
+import engine.segment.integrity.IntegrityMonitor;
 import engine.segment.integrity.IntegrityRegistry;
 import engine.segment.integrity.IntegrityReport;
 import engine.segment.integrity.enums.CheckSource;
@@ -32,6 +33,7 @@ public class StorageEngine {
 	private final SegmentDirectory segmentDirectory; // a single bucket - later will be able to support multiple ones
 	private final IntegrityRegistry registry;
 	private final AdmissionPolicy admissionPolicy;
+	private final IntegrityMonitor monitor;
 
 	public StorageEngine() throws IOException {
 		this.rootStorageDir = Path.of(StorageEngineConfig.STORAGE_ROOT);
@@ -39,47 +41,19 @@ public class StorageEngine {
 
 		this.registry = new IntegrityRegistry();
 		this.admissionPolicy = new AdmissionPolicy(registry);
+		this.monitor = new IntegrityMonitor(registry);
 
 		this.segmentDirectory = new SegmentDirectory(
 			this.rootStorageDir.resolve(StorageEngineConfig.SEGMENT_POOL_DIR_NAME),
 			admissionPolicy
 		);
 
-		runStartupIntegrityChecks();
+		bootStorageEngine();
 	}
 
-	private void runStartupIntegrityChecks() {
-		log.info("Starting startup integrity checks for " + segmentDirectory.getAllSegments().size() + " segments");
-
-		int healthyCount = 0;
-		int unhealthyCount = 0;
-		int degradedCount = 0;
-
-		for (SegmentMeta segment : segmentDirectory.getAllSegments()) {
-			log.fine("Checking segment " + segment.getId());
-			IntegrityReport report = IntegrityChecker.check(segment, CheckSource.STARTUP);
-			registry.add(report);
-
-			switch (report.getHealthStatus()) {
-				case HEALTHY:
-					healthyCount++;
-					break;
-				case UNHEALTHY:
-				case UNUSABLE:
-					unhealthyCount++;
-					log.warning("Segment " + segment.getId() + " failed integrity check: " + report.getFailureCategory());
-					break;
-				case DEGRADED:
-					degradedCount++;
-					log.info("Segment " + segment.getId() + " has degraded status: " + report.getFailureCategory());
-					break;
-				default:
-					log.info("Segment " + segment.getId() + " has " + report.getHealthStatus() + " status");
-			}
-		}
-
-		log.info("Startup integrity checks completed: " + healthyCount + " healthy, " +
-				degradedCount + " degraded, " + unhealthyCount + " unhealthy");
+	private void bootStorageEngine() {
+		// perform startup integrity checks on all segmentDirectories (for now just one)
+		monitor.performStartupChecks(this.segmentDirectory.getAllSegments());
 	}
 
 	public ObjectLocation write(InputStream src) throws IOException {

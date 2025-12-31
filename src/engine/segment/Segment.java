@@ -40,6 +40,7 @@ public class Segment {
 				}
 			}
 		}
+		log.severe("SegmentObject was created, current checksum: " + Long.toHexString(this.checksum.getValue()));
 	}
 
 	public long write(ByteBuffer bufferToWrite) throws IOException {

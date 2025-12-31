@@ -47,9 +47,9 @@ public class ChecksumCheck implements IntegrityCheck {
 			report.actualChecksum(actualChecksum);
 
 			IntegrityCheckResult checkResult =
-				builder.status((actualChecksum == expectedChecksum) ? CheckStatus.PASS : CheckStatus.FAIL)
+				builder.status((actualChecksum.equals(expectedChecksum)) ? CheckStatus.PASS : CheckStatus.FAIL)
 				.details(
-					(actualChecksum == expectedChecksum) ? "Segment file checksum mismatches" :
+					(actualChecksum.equals(expectedChecksum)) ? "Segment file checksum mismatches" :
 					null)
 				.build();
 
@@ -67,5 +67,10 @@ public class ChecksumCheck implements IntegrityCheck {
 
 			return checkResult;
 		}
+	}
+
+	@Override
+	public CheckType getCheckType() {
+		return CHECK_TYPE;
 	}
 }

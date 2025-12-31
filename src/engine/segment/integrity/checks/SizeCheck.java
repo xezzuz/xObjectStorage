@@ -68,4 +68,9 @@ public class SizeCheck implements IntegrityCheck {
 			return checkResult;
 		}
 	}
+
+	@Override
+	public CheckType getCheckType() {
+		return CHECK_TYPE;
+	}
 }

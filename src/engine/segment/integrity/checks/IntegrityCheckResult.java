@@ -34,6 +34,22 @@ public class IntegrityCheckResult {
 		return Optional.ofNullable(exception);
 	}
 
+	public static IntegrityCheckResult newPass(CheckType type) {
+		return new IntegrityCheckResult(type, CheckStatus.PASS, null, null);
+	}
+
+	public static IntegrityCheckResult newFail(CheckType type, String details) {
+		return new IntegrityCheckResult(type, CheckStatus.FAIL, details, null);
+	}
+
+	public static IntegrityCheckResult newSkipped(CheckType type, String details) {
+		return new IntegrityCheckResult(type, CheckStatus.SKIPPED, details, null);
+	}
+
+	public static IntegrityCheckResult newError(CheckType type, String details, Exception e) {
+		return new IntegrityCheckResult(type, CheckStatus.ERROR, details, e);
+	}
+
 	public static class Builder {
 		private CheckType type;
 		private CheckStatus status;

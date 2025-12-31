@@ -209,6 +209,10 @@ public class IntegrityReport {
 			return this;
 		}
 
+		public Map<CheckType, IntegrityCheckResult> getIntegrityCheckResults() {
+			return this.IntegrityCheckResults;
+		}
+
 		public Builder addIntegrityCheckResult(IntegrityCheckResult result) {
 			this.IntegrityCheckResults.put(result.getType(), result);
 			return this;
