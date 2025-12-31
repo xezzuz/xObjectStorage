@@ -9,7 +9,7 @@ import java.util.Collections;
 
 import engine.segment.SegmentState;
 import engine.segment.integrity.enums.*;
-import engine.segment.integrity.*;
+import engine.segment.integrity.checks.*;
 
 /**
  * SegmentIntegrityReport is an immutable description of a segment's observed health.
@@ -48,7 +48,7 @@ public class IntegrityReport {
 
 	/* ---------------- CHECK RESULTS ---------------- */
 
-	private final Map<CheckType, CheckResult> checkResults;
+	private final Map<CheckType, IntegrityCheckResult> IntegrityCheckResults;
 
 
 	/* ------------------- SUMMARY ------------------- */
@@ -77,7 +77,7 @@ public class IntegrityReport {
 		this.actualChecksum = builder.actualChecksum;
 		this.ioException = builder.ioException;
 
-		this.checkResults = Collections.unmodifiableMap(new HashMap<>(builder.checkResults));
+		this.IntegrityCheckResults = Collections.unmodifiableMap(new HashMap<>(builder.IntegrityCheckResults));
 
 		this.healthStatus = builder.healthStatus;
 		this.failureCategory = builder.failureCategory;
@@ -111,8 +111,8 @@ public class IntegrityReport {
 		return checkTimestamp;
 	}
 
-	public Map<CheckType, CheckResult> getCheckResults() {
-		return checkResults;
+	public Map<CheckType, IntegrityCheckResult> getIntegrityCheckResults() {
+		return IntegrityCheckResults;
 	}
 
 	public HealthStatus getHealthStatus() {
@@ -149,7 +149,7 @@ public class IntegrityReport {
 		private String expectedChecksum;
 		private String actualChecksum;
 		private Exception ioException;
-		private Map<CheckType, CheckResult> checkResults = new HashMap<>();
+		private Map<CheckType, IntegrityCheckResult> IntegrityCheckResults = new HashMap<>();
 		private HealthStatus healthStatus = HealthStatus.UNKNOWN;
 		private FailureCategory failureCategory = FailureCategory.NONE;
 		private SeverityLevel severity = SeverityLevel.INFO;
@@ -159,58 +159,58 @@ public class IntegrityReport {
 			this.segmentPath = segmentPath;
 		}
 
-		Builder segmentState(SegmentState state) {
+		public Builder segmentState(SegmentState state) {
 			this.segmentState = state;
 			return this;
 		}
 
-		Builder fileExists(boolean value) {
+		public Builder fileExists(boolean value) {
 			this.fileExists = value;
 			return this;
 		}
 
-		Builder isRegularFile(boolean value) {
+		public Builder isRegularFile(boolean value) {
 			this.isRegularFile = value;
 			return this;
 		}
 
-		Builder isReadable(boolean value) {
+		public Builder isReadable(boolean value) {
 			this.isReadableFile = value;
 			return this;
 		}
 
-		Builder checkSource(CheckSource source) {
+		public Builder checkSource(CheckSource source) {
 			this.checkSource = source;
 			return this;
 		}
 
-		Builder expectedSize(long size) {
+		public Builder expectedSize(long size) {
 			this.expectedSize = size;
 			return this;
 		}
 
-		Builder actualSize(long size) {
+		public Builder actualSize(long size) {
 			this.actualSize = size;
 			return this;
 		}
 
-		Builder expectedChecksum(String checksum) {
+		public Builder expectedChecksum(String checksum) {
 			this.expectedChecksum = checksum;
 			return this;
 		}
 
-		Builder actualChecksum(String checksum) {
+		public Builder actualChecksum(String checksum) {
 			this.actualChecksum = checksum;
 			return this;
 		}
 
-		Builder exception(Exception e) {
+		public Builder exception(Exception e) {
 			this.ioException = e;
 			return this;
 		}
 
-		Builder addCheckResult(CheckResult result) {
-			this.checkResults.put(result.getType(), result);
+		public Builder addIntegrityCheckResult(IntegrityCheckResult result) {
+			this.IntegrityCheckResults.put(result.getType(), result);
 			return this;
 		}
 

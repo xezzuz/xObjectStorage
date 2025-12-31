@@ -62,13 +62,13 @@ public class SegmentIntegrityChecker {
 	 * @return List<SegmentHealthStatus> object with detailed results
 	 */
 	public static List<SegmentHealthStatus> performHealthCheck(List<SegmentMeta> segmentsMeta) {
-		List<SegmentHealthStatus> healthCheckResults = new ArrayList<>();
+		List<SegmentHealthStatus> healthIntegrityCheckResults = new ArrayList<>();
 
 		for (SegmentMeta segment : segmentsMeta) {
-			healthCheckResults.add(performHealthCheck(segment));
+			healthIntegrityCheckResults.add(performHealthCheck(segment));
 		}
 
-		return healthCheckResults;
+		return healthIntegrityCheckResults;
 	}
 
 	private static boolean isSegmentFileExists(SegmentMeta meta) {

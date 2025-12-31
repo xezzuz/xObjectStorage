@@ -8,7 +8,7 @@ import engine.segment.SegmentMeta;
 import engine.util.ChecksumUtils;
 
 import engine.segment.integrity.enums.*;
-import engine.segment.integrity.*;
+import engine.segment.integrity.checks.*;
 
 import static logging.AppLogger.log;
 
@@ -32,7 +32,7 @@ public final class IntegrityChecker {
 			.expectedSize(meta.getSize())
 			.expectedChecksum(meta.getChecksum());
 
-		Map<CheckType, CheckResult> result = new HashMap<>();
+		Map<CheckType, IntegrityCheckResult> result = new HashMap<>();
 
 		/**
 		 * this should evolve into a list of checks
@@ -54,29 +54,29 @@ public final class IntegrityChecker {
 			result.put(
 				CheckType.EXISTENCE,
 				exists
-					? new CheckResult(CheckType.EXISTENCE, CheckStatus.PASS, null, null)
-					: new CheckResult(CheckType.EXISTENCE, CheckStatus.FAIL, "Segment file does not exist", null)
+					? new IntegrityCheckResult(CheckType.EXISTENCE, CheckStatus.PASS, null, null)
+					: new IntegrityCheckResult(CheckType.EXISTENCE, CheckStatus.FAIL, "Segment file does not exist", null)
 			);
 
 			result.put(
 				CheckType.PERMISSIONS,
 				readable
-					? new CheckResult(CheckType.PERMISSIONS, CheckStatus.PASS, null, null)
-					: new CheckResult(CheckType.PERMISSIONS, CheckStatus.FAIL, "Segment file is not readable", null)
+					? new IntegrityCheckResult(CheckType.PERMISSIONS, CheckStatus.PASS, null, null)
+					: new IntegrityCheckResult(CheckType.PERMISSIONS, CheckStatus.FAIL, "Segment file is not readable", null)
 			);
 
 			if (!exists || !regular || !readable) {
 				log.warning("Segment " + meta.getId() + " failed existence/perms check, skipping dependent checks");
 				// SKIP DEPENDENT CHECKS
-				result.put(CheckType.SIZE, skipCheckResult(CheckType.SIZE, "Prerequisite failed"));
-				result.put(CheckType.CHECKSUM, skipCheckResult(CheckType.CHECKSUM, "Prerequisite failed"));
+				result.put(CheckType.SIZE, skipIntegrityCheckResult(CheckType.SIZE, "Prerequisite failed"));
+				result.put(CheckType.CHECKSUM, skipIntegrityCheckResult(CheckType.CHECKSUM, "Prerequisite failed"));
 				// TODO: RETURN THE FINAL REPORT
 				return finalizeReport(reportBuilder, result);
 			}
 		} catch (Exception e) {
 			log.severe("Exception during existence/permissions check for segment " + meta.getId() + ": " + e.getMessage());
 			reportBuilder.exception(e);
-			result.put(CheckType.IO, errorCheckResult(CheckType.IO, e.getMessage(), e));
+			result.put(CheckType.IO, errorIntegrityCheckResult(CheckType.IO, e.getMessage(), e));
 			// TODO: RETURN THE FINAL REPORT
 			return finalizeReport(reportBuilder, result);
 		}
@@ -88,19 +88,19 @@ public final class IntegrityChecker {
 			reportBuilder.actualSize(actualSize);
 
 			if (actualSize == meta.getSize()) {
-				result.put(CheckType.SIZE, passCheckResult(CheckType.SIZE));
+				result.put(CheckType.SIZE, passIntegrityCheckResult(CheckType.SIZE));
 			} else {
 				log.warning("Segment " + meta.getId() + " size mismatch: expected " + meta.getSize() + ", actual " + actualSize);
-				result.put(CheckType.SIZE, failCheckResult(CheckType.SIZE, String.format("Expected: '%d', Actual: '%d'", meta.getSize(), actualSize)));
+				result.put(CheckType.SIZE, failIntegrityCheckResult(CheckType.SIZE, String.format("Expected: '%d', Actual: '%d'", meta.getSize(), actualSize)));
 				// SKIP DEPENDENT CHECKS
-				result.put(CheckType.CHECKSUM, skipCheckResult(CheckType.CHECKSUM, "Prerequisite failed"));
+				result.put(CheckType.CHECKSUM, skipIntegrityCheckResult(CheckType.CHECKSUM, "Prerequisite failed"));
 				// TODO: RETURN THE FINAL REPORT
 				return finalizeReport(reportBuilder, result);
 			}
 		} catch (Exception e) {
 			log.severe("Exception during size check for segment " + meta.getId() + ": " + e.getMessage());
 			reportBuilder.exception(e);
-			result.put(CheckType.IO, errorCheckResult(CheckType.IO, e.getMessage(), e));
+			result.put(CheckType.IO, errorIntegrityCheckResult(CheckType.IO, e.getMessage(), e));
 			// TODO: RETURN THE FINAL REPORT
 			return finalizeReport(reportBuilder, result);
 		}
@@ -110,10 +110,10 @@ public final class IntegrityChecker {
 		try {
 			String actualChecksum = ChecksumUtils.calculateFileChecksum(meta.getPath());
 			if (actualChecksum.equals(meta.getChecksum())) {
-				result.put(CheckType.CHECKSUM, passCheckResult(CheckType.CHECKSUM));
+				result.put(CheckType.CHECKSUM, passIntegrityCheckResult(CheckType.CHECKSUM));
 			} else {
 				log.warning("Segment " + meta.getId() + " checksum mismatch: expected " + meta.getChecksum() + ", actual " + actualChecksum);
-				result.put(CheckType.CHECKSUM, failCheckResult(CheckType.CHECKSUM, String.format("Expected: '%s', Actual: '%s'", meta.getChecksum(), actualChecksum)));
+				result.put(CheckType.CHECKSUM, failIntegrityCheckResult(CheckType.CHECKSUM, String.format("Expected: '%s', Actual: '%s'", meta.getChecksum(), actualChecksum)));
 				// SKIP DEPENDENT CHECKS IF ANY IN THE FUTURE
 				// result.put(CheckType.CHECKSUM, "Prerequisite failed"); // EXAMPLE
 				// TODO: RETURN THE FINAL REPORT
@@ -122,7 +122,7 @@ public final class IntegrityChecker {
 		} catch (Exception e) {
 			log.severe("Exception during checksum check for segment " + meta.getId() + ": " + e.getMessage());
 			reportBuilder.exception(e);
-			result.put(CheckType.IO, errorCheckResult(CheckType.IO, e.getMessage(), e));
+			result.put(CheckType.IO, errorIntegrityCheckResult(CheckType.IO, e.getMessage(), e));
 			// TODO: RETURN THE FINAL REPORT
 		}
 		IntegrityReport report = finalizeReport(reportBuilder, result);
@@ -130,7 +130,7 @@ public final class IntegrityChecker {
 		return report;
 	}
 
-	private static IntegrityReport finalizeReport(IntegrityReport.Builder builder, Map<CheckType, CheckResult> results) {
+	private static IntegrityReport finalizeReport(IntegrityReport.Builder builder, Map<CheckType, IntegrityCheckResult> results) {
 		FailureCategory failureCategory = mapFailureCategory(results);
 		HealthStatus healthStatus = mapHealthStatus(failureCategory);
 		SeverityLevel severityLevel = mapSeverityLevel(failureCategory);
@@ -140,14 +140,14 @@ public final class IntegrityChecker {
 			   .severity(severityLevel);
 		// TODO: ADD IS RECOVERABLE
 
-		for (CheckResult res : results.values()) {
-			builder.addCheckResult(res);
+		for (IntegrityCheckResult res : results.values()) {
+			builder.addIntegrityCheckResult(res);
 		}
 
 		return builder.build();
 	}
 
-	private static FailureCategory mapFailureCategory(Map<CheckType, CheckResult> results) {
+	private static FailureCategory mapFailureCategory(Map<CheckType, IntegrityCheckResult> results) {
 		// TODO: FIX THIS PLIZ HH
 		// if (results.containsValue(CheckStatus.ERROR))
 		// 	return FailureCategory.IO_FAILURE;
@@ -195,19 +195,19 @@ public final class IntegrityChecker {
 		}
 	}
 
-	private static CheckResult passCheckResult(CheckType type) {
-		return new CheckResult(type, CheckStatus.PASS, null, null);
+	private static IntegrityCheckResult passIntegrityCheckResult(CheckType type) {
+		return new IntegrityCheckResult(type, CheckStatus.PASS, null, null);
 	}
 
-	private static CheckResult failCheckResult(CheckType type, String reason) {
-		return new CheckResult(type, CheckStatus.FAIL, reason, null);
+	private static IntegrityCheckResult failIntegrityCheckResult(CheckType type, String reason) {
+		return new IntegrityCheckResult(type, CheckStatus.FAIL, reason, null);
 	}
 
-	private static CheckResult skipCheckResult(CheckType type, String reason) {
-		return new CheckResult(type, CheckStatus.SKIPPED, reason, null);
+	private static IntegrityCheckResult skipIntegrityCheckResult(CheckType type, String reason) {
+		return new IntegrityCheckResult(type, CheckStatus.SKIPPED, reason, null);
 	}
 
-	private static CheckResult errorCheckResult(CheckType type, String reason, Exception e) {
-		return new CheckResult(type, CheckStatus.ERROR, reason, e);
+	private static IntegrityCheckResult errorIntegrityCheckResult(CheckType type, String reason, Exception e) {
+		return new IntegrityCheckResult(type, CheckStatus.ERROR, reason, e);
 	}
 }
