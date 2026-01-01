@@ -1,6 +1,9 @@
 package main;
 
 import engine.*;
+import node.NodeServer;
+import node.NodeStorageService;
+import node.ObjectIndex;
 import objectabstraction.*;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -15,14 +18,21 @@ public class Main {
 
 		try {
 			StorageEngine se = new StorageEngine();
+			ObjectIndex idx = new ObjectIndex();
+			NodeStorageService storageService = new NodeStorageService(se, idx);
+			NodeServer server = new NodeServer(8081, storageService);
 
-			ObjectLocation obj1 = se.write(new FileInputStream("resources/static/atadamano-ma3ak.png"));
-			ObjectLocation obj2 = se.write(new FileInputStream("resources/static/file.txt"));
-			ObjectLocation obj3 = se.write(new FileInputStream("resources/static/cih.pdf"));
+			server.start();
 
-			new FileOutputStream(Path.of("out", "obj1.png").toFile()).write(se.read(obj1).readAllBytes());
-			new FileOutputStream(Path.of("out", "obj2.pdf").toFile()).write(se.read(obj2).readAllBytes());
-			new FileOutputStream(Path.of("out", "obj3.pdf").toFile()).write(se.read(obj3).readAllBytes());
+			// StorageEngine se = new StorageEngine();
+
+			// ObjectLocation obj1 = se.write(new FileInputStream("resources/static/atadamano-ma3ak.png"));
+			// ObjectLocation obj2 = se.write(new FileInputStream("resources/static/file.txt"));
+			// ObjectLocation obj3 = se.write(new FileInputStream("resources/static/cih.pdf"));
+
+			// new FileOutputStream(Path.of("out", "obj1.png").toFile()).write(se.read(obj1).readAllBytes());
+			// new FileOutputStream(Path.of("out", "obj2.pdf").toFile()).write(se.read(obj2).readAllBytes());
+			// new FileOutputStream(Path.of("out", "obj3.pdf").toFile()).write(se.read(obj3).readAllBytes());
 		} catch (Exception e) {
 			log.severe("Exception occurred: " + e.getMessage());
 			e.printStackTrace();
