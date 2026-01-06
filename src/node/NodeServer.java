@@ -2,6 +2,9 @@ package node;
 
 import com.sun.net.httpserver.HttpServer;
 
+import node.service.object.ObjectController;
+import node.service.NodeStorageService;
+
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 
@@ -9,13 +12,13 @@ import static logging.AppLogger.log;
 
 public class NodeServer {
 	private final HttpServer server;
-	private final NodeStorageService storageService; // needless for now
+	// private final NodeStorageService storageService; // needless for now
 
 	public NodeServer(int port, NodeStorageService storageService) throws Exception {
-		this.storageService = storageService;
+		// this.storageService = storageService;
 		this.server = HttpServer.create(new InetSocketAddress(port), 0);
 
-		server.createContext("/objects", new ObjectHandler(storageService));
+		server.createContext("/objects", new ObjectController(storageService));
 		server.createContext("/health", exchange -> {
 			OutputStream body = exchange.getResponseBody();
 			exchange.sendResponseHeaders(200, "OK".length());

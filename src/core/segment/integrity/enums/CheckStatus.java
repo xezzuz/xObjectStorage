@@ -1,0 +1,8 @@
+package core.segment.integrity.enums;
+
+public enum CheckStatus {
+	PASS, // PASSED
+	FAIL, // FAILED
+	ERROR, // CRITICAL ERROR (EXCEPTION)
+	SKIPPED // SKIPPED BECAUSE OF A SHORT CIRCUT (EX: SKIPPED SIZE AND CHECKSUM IF EXISTENCE FAILED)
+}

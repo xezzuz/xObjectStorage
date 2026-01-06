@@ -1,0 +1,11 @@
+package core.segment.integrity.enums;
+
+public enum FailureCategory {
+	NONE,
+	MISSING_RESOURCE,
+	METADATA_MISMTACH,
+	DATA_CORRUPTION,
+	PERMISSION_ISSUE,
+	IO_FAILURE,
+	UNKNOWN
+}

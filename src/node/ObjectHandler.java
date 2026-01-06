@@ -7,6 +7,8 @@ import java.io.InputStream;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
+import node.service.NodeStorageService;
+
 import static logging.AppLogger.log;
 
 public class ObjectHandler implements HttpHandler {
@@ -25,10 +27,16 @@ public class ObjectHandler implements HttpHandler {
 		log.info("Incoming request " + method + " " + path);
 
 		switch (exchange.getRequestMethod()) {
-			case "GET" -> handleGet(exchange, objectId);
-			case "PUT" -> handlePut(exchange, objectId);
+			case "GET":
+				handleGet(exchange, objectId);
+				break;
+			case "PUT":
+				handlePut(exchange, objectId);
+				break;
 
-			default -> exchange.sendResponseHeaders(405, -1);
+			default:
+				exchange.sendResponseHeaders(405, -1);
+				break;
 		}
 	}
 

@@ -3,7 +3,7 @@ package node;
 import java.util.HashMap;
 import java.util.Map;
 
-import objectabstraction.ObjectLocation;
+import core.objectabstraction.ObjectLocation;
 
 public class ObjectIndex {
 	private final Map<String, ObjectLocation> inMemoryMap = new HashMap<>();
