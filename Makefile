@@ -13,7 +13,7 @@ compile:
 	$(JAVAC) -d $(BIN_DIR) $(SOURCES)
 
 run: compile
-	$(JAVA) -cp $(BIN_DIR) main.Main
+	$(JAVA) -cp $(BIN_DIR) cli.Main
 
 clean:
 	rm -rf $(BIN_DIR)

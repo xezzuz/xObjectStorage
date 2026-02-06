@@ -4,9 +4,15 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 
+<<<<<<< HEAD:src/node/service/NodeStorageService.java
 import engine.StorageEngine;
 import node.ObjectIndex;
 import objectabstraction.ObjectLocation;
+=======
+import core.StorageEngine;
+import node.ObjectIndex;
+import core.objectabstraction.ObjectLocation;
+>>>>>>> d1c80038c4b6aef8a2a0e8f1771d3bf237b6a9b0:src/node/NodeStorageService.java
 
 public class NodeStorageService {
 	private final StorageEngine engine;

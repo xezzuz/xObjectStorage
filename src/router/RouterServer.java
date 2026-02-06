@@ -10,7 +10,10 @@ import com.sun.net.httpserver.HttpServer;
 import static logging.AppLogger.log;
 
 import router.node.NodeClient;
+<<<<<<< HEAD
 // import router.node.NodeEndpoint;
+=======
+>>>>>>> d1c80038c4b6aef8a2a0e8f1771d3bf237b6a9b0
 import cluster.NodeEndpoint;
 import router.placement.PlacementStrategy;
 
