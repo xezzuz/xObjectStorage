@@ -23,7 +23,7 @@ xObjectStorage is designed to handle large binary objects by storing them in seg
 ### Core Components
 
 - **StorageEngine**: The main entry point that manages the storage system, handling write and read operations
-- **SegmentPoolManager**: Manages a pool of segments (essentially a bucket), handling allocation, writing, and reading operations
+- **SegmentDirectory**: Manages a pool of segments (essentially a bucket), handling allocation, writing, and reading operations
 - **ObjectLocation**: Represents the location of an object within the storage system (segment ID, offset, size)
 
 ### Segment Management

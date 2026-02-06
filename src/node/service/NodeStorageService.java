@@ -1,10 +1,11 @@
-package node;
+package node.service;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 
 import engine.StorageEngine;
+import node.ObjectIndex;
 import objectabstraction.ObjectLocation;
 
 public class NodeStorageService {

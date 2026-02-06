@@ -2,11 +2,8 @@ package engine;
 
 import engine.segment.*;
 import engine.segment.integrity.AdmissionPolicy;
-import engine.segment.integrity.IntegrityChecker;
 import engine.segment.integrity.IntegrityMonitor;
 import engine.segment.integrity.IntegrityRegistry;
-import engine.segment.integrity.IntegrityReport;
-import engine.segment.integrity.enums.CheckSource;
 import engine.config.*;
 import objectabstraction.*;
 import java.io.IOException;
